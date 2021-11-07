@@ -4,14 +4,18 @@ pragma solidity ^0.8.0;
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
 
-contract WhitelistPresale is Ownable {
+contract WhitelistPresale is Ownable, ReentrancyGuard {
 
     event AddressRegistered(address buyer, uint256 amount); // Log the User and the amount they can buy
     
     IERC20 public BUSD = IERC20();
+    IERC20 public DOGEDOLLAR; //To be initialised with the setToken() function
     
     uint8 constant tokensPerBUSD = 1; 
+    uint256 public refundTime;
     
     bool public presaleStarted = false;
     bool public isStopped = false;
@@ -29,6 +33,21 @@ contract WhitelistPresale is Ownable {
 
     constructor() {
         owner = msg.sender;
+        refundTime = block.timestamp.add(7 days);
+
+    }
+
+    function setToken(IERC20 addr) external onlyOwner nonReentrant {
+        require(DOGEDOLLAR == IERC20(address(0)), "You can set the address only once");
+        DOGEDOLLAR = addr;
+    }
+
+    function startPresale() external onlyOwner {
+        presaleStarted = true;
+    }
+
+    function pausePresale() external onlyOwner {
+        presaleStarted = false;
     }
 
     function emergencyRefund() external onlyOwner nonReentrant {
@@ -72,12 +91,5 @@ contract WhitelistPresale is Ownable {
 
     }
 
-    function greet() public view returns (string memory) {
-        return greeting;
-    }
-
-    function setGreeting(string memory _greeting) public {
-        console.log("Changing greeting from '%s' to '%s'", greeting, _greeting);
-        greeting = _greeting;
-    }
+    
 }
